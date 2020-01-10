@@ -12,17 +12,22 @@ class Client {
     this.slowInvocationStatusHandler = null;
     this.slowInvocationTimeout = argparse.getArgValue('debug-synchronization');
     this.successfulTestRun = true; // flag for cleanup
-    this.pandingAppCrash;
+    this._pendingAppCrashMessage = undefined;
 
     this.setActionListener(new actions.AppWillTerminateWithError(), (response) => {
-      this.pandingAppCrash = response.params.errorDetails;
-      this.ws.rejectAll(this.pandingAppCrash);
+      this._pendingAppCrashMessage = response.params.errorDetails;
+      this.ws.rejectAll(this._pendingAppCrashMessage);
     });
   }
 
   async connect() {
     await this.ws.open();
     await this.sendAction(new actions.Login(this.configuration.sessionId));
+  }
+
+  reset() {
+    this._pendingAppCrashMessage = undefined;
+    this.ws.resetInFlightPromises();
   }
 
   async reloadReactNative() {
@@ -44,7 +49,7 @@ class Client {
 
   async cleanup() {
     clearTimeout(this.slowInvocationStatusHandler);
-    if (this.isConnected && !this.pandingAppCrash) {
+    if (this.isConnected && !this._pendingAppCrashMessage) {
       if(this.ws.isOpen()) {
         await this.sendAction(new actions.Cleanup(this.successfulTestRun));
       }
@@ -57,7 +62,7 @@ class Client {
   }
 
   async currentStatus() {
-    await this.sendAction(new actions.CurrentStatus());
+    return (await this.sendAction(new actions.CurrentStatus())).params;
   }
 
   async shake() {
@@ -103,11 +108,18 @@ class Client {
     }
   }
 
-  getPendingCrashAndReset() {
-    const crash = this.pandingAppCrash;
-    this.pandingAppCrash = undefined;
+  getStatus() {
+    return {
+      pendingAppCrashMessage: this._pendingAppCrashMessage,
+      pendingRequests: _.values(this.ws.inFlightPromises)
+        .map(({ message }) => ({
+          id: message.messageId,
+          type: message.type,
+          params: message.params
+        }))
+        .filter(m => m.type !== 'currentStatus'),
+    };
 
-    return crash;
   }
 
   setActionListener(action, clientCallback) {
@@ -132,34 +144,10 @@ class Client {
   slowInvocationStatus() {
     return setTimeout(async () => {
       if (this.ws.isOpen()) {
-        const status = await this.currentStatus();
+        this._lastStatus = await this.currentStatus();
         this.slowInvocationStatusHandler = this.slowInvocationStatus();
       }
     }, this.slowInvocationTimeout);
-  }
-
-  dumpPendingRequests({testName} = {}) {
-    const messages = _.values(this.ws.inFlightPromises)
-      .map(p => p.message)
-      .filter(m => m.type !== 'currentStatus');
-
-    if (_.isEmpty(messages)) {
-      return;
-    }
-
-    let dump = 'App has not responded to the network requests below:';
-    for (const msg of messages) {
-      dump += `\n  (id = ${msg.messageId}) ${msg.type}: ${JSON.stringify(msg.params)}`;
-    }
-
-    const notice = testName
-      ? `That might be the reason why the test "${testName}" has timed out.`
-      : `Unresponded network requests might result in timeout errors in Detox tests.`;
-
-    dump += `\n\n${notice}\n`;
-
-    log.warn({ event: 'PENDING_REQUESTS'}, dump);
-    this.ws.resetInFlightPromises();
   }
 }
 

@@ -130,12 +130,6 @@ class CurrentStatus extends Action {
 
   async handle(response) {
     this.expectResponseOfType(response, 'currentStatusResult');
-
-    //console.log("res:" + JSON.stringify(response, null, 2));
-    _.forEach(response.params.resources, (resource) => {
-      log.info({ class: 'CurrentStatus' }, `Sync ${resource.name}: ${resource.info.prettyPrint}`);
-    });
-    return response;
   }
 }
 

@@ -90,7 +90,6 @@ class Detox {
     await this._artifactsManager.onAfterAll();
 
     if (this._client) {
-      this._client.dumpPendingRequests();
       await this._client.cleanup();
     }
 
@@ -107,13 +106,16 @@ class Detox {
     }
   }
 
+  getStatus() {
+    return {
+      pendingRequests: this._client.getPendingRequestsAndReset(),
+      pendingAppCrashMessage: this._client.getPendingCrashAndReset(),
+    };
+  }
+
   async beforeEach(testSummary) {
     this._validateTestSummary(testSummary);
     this._logTestRunCheckpoint('DETOX_BEFORE_EACH', testSummary);
-    await this._dumpUnhandledErrorsIfAny({
-      pendingRequests: false,
-      testName: testSummary.fullName,
-    });
     await this._artifactsManager.onBeforeEach(testSummary);
   }
 
@@ -121,10 +123,6 @@ class Detox {
     this._validateTestSummary(testSummary);
     this._logTestRunCheckpoint('DETOX_AFTER_EACH', testSummary);
     await this._artifactsManager.onAfterEach(testSummary);
-    await this._dumpUnhandledErrorsIfAny({
-      pendingRequests: testSummary.timedOut,
-      testName: testSummary.fullName,
-    });
   }
 
   _logTestRunCheckpoint(event, { status, fullName }) {
@@ -158,16 +156,6 @@ class Detox {
   }
 
   async _dumpUnhandledErrorsIfAny({ testName, pendingRequests }) {
-    if (pendingRequests) {
-      this._client.dumpPendingRequests({testName});
-    }
-
-    const pendingAppCrash = this._client.getPendingCrashAndReset();
-
-    if (pendingAppCrash) {
-      log.error({ event: 'APP_CRASH' }, `App crashed in test '${testName}', here's the native stack trace: \n${pendingAppCrash}`);
-      await this.device.launchApp({ newInstance: true });
-    }
   }
 
   async _getSessionConfig() {
