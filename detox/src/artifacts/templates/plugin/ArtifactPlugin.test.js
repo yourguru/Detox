@@ -79,7 +79,7 @@ describe('ArtifactPlugin', () => {
       };
     });
 
-    it('should not update context on .onBeforeLaunchApp', async () => {
+    it('should set isLaunchingApp on .onBeforeLaunchApp', async () => {
       await expect(plugin.onBeforeLaunchApp({
         deviceId: 'testDeviceId',
         bundleId: 'testBundleId',
@@ -90,7 +90,8 @@ describe('ArtifactPlugin', () => {
 
       expect(plugin.context).toEqual({
         deviceId: 'someOriginalDeviceId',
-        shouldNotBeDeletedFromContext: 'extraProperty'
+        shouldNotBeDeletedFromContext: 'extraProperty',
+        isLaunchingApp: true,
       });
     });
 
@@ -112,6 +113,7 @@ describe('ArtifactPlugin', () => {
         },
         pid: 2018,
         shouldNotBeDeletedFromContext: 'extraProperty',
+        isLaunchingApp: false,
       });
     });
 
