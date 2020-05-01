@@ -14,7 +14,7 @@ class DetoxEnvironment extends NodeEnvironment {
   constructor(config) {
     super(config);
 
-    this._initTimeout = this.constructor.initTimeout;
+    this._initTimeout = this.constructor.initTimeout || 300000;
     this._testTimeout = 5000;
   }
 
@@ -101,7 +101,5 @@ class DetoxEnvironment extends NodeEnvironment {
     await this.detox.cleanup();
   }
 }
-
-DetoxEnvironment.initTimeout = 300000;
 
 module.exports = DetoxEnvironment;

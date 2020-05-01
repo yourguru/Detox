@@ -10,7 +10,6 @@ const EmulatorDriver = require('./devices/drivers/android/EmulatorDriver');
 const AttachedAndroidDriver = require('./devices/drivers/android/AttachedAndroidDriver');
 const DetoxRuntimeError = require('./errors/DetoxRuntimeError');
 const AsyncEmitter = require('./utils/AsyncEmitter');
-const MissingDetox = require('./utils/MissingDetox');
 const configuration = require('./configuration');
 const Client = require('./client/Client');
 const DetoxServer = require('./server/DetoxServer');
@@ -283,7 +282,6 @@ class Detox {
   }
 }
 
-Detox.none = new MissingDetox();
 Detox.global = global;
 
 module.exports = Detox;
