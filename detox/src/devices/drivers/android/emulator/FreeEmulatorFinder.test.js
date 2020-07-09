@@ -37,24 +37,7 @@ describe('FreeEmulatorFinder', () => {
     uut = new FreeEmulatorFinder(mockAdb, mockDeviceRegistry, mockAvdName);
   });
 
-  it('should create an adb devices helper', async () => {
-    expect(adbDevicesHelper.ctor).toHaveBeenCalledWith(mockAdb);
-  });
-
-  it('should pass a custom matcher func onto adb-devices helper for finding a free emulator', async () => {
-    await uut.findFreeDevice();
-    expect(adbDevicesHelper.lookupDevice).toHaveBeenCalledWith(expect.any(Function));
-  });
-
-  it('should return the matched emulator', async () => {
-    const adbName = 'mock-adb-name';
-    adbDevicesHelper.lookupDevice.mockReturnValue(adbName);
-
-    const deviceName = await uut.findFreeDevice();
-    expect(deviceName).toEqual(adbName);
-  });
-
-  describe('Device lookup matcher function', () => {
+  describe('matcher function', () => {
     it('should restrict matching to emulators', async () => {
       const emuDevice = anEmulatorDevice();
       const nonEmuDevice = aNonEmuDevice();
