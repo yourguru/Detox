@@ -8,6 +8,7 @@ const invoke = require('../../../invoke');
 const InvocationManager = invoke.InvocationManager;
 const ADB = require('./exec/ADB');
 const AAPT = require('./exec/AAPT');
+const DeviceRegistry = require('../../DeviceRegistry');
 const APKPath = require('./tools/APKPath');
 const TempFileXfer = require('./tools/TempFileXfer');
 const AppInstallHelper = require('./tools/AppInstallHelper');
@@ -23,6 +24,7 @@ const ADBScreenrecorderPlugin = require('../../../artifacts/video/ADBScreenrecor
 const AndroidDevicePathBuilder = require('../../../artifacts/utils/AndroidDevicePathBuilder');
 const TimelineArtifactPlugin = require('../../../artifacts/timeline/TimelineArtifactPlugin');
 const temporaryPath = require('../../../artifacts/utils/temporaryPath');
+const environment = require('../../../utils/environment');
 const sleep = require('../../../utils/sleep');
 const retry = require('../../../utils/retry');
 const getAbsoluteBinaryPath = require('../../../utils/getAbsoluteBinaryPath');
@@ -39,11 +41,15 @@ class AndroidDriver extends DeviceDriverBase {
     this.adb = new ADB();
     this.aapt = new AAPT();
     this.fileXfer = new TempFileXfer(this.adb);
+    this.freeDeviceFinder = null;
     this.appInstallHelper = new AppInstallHelper(this.adb, this.fileXfer);
     this.appUninstallHelper = new AppUninstallHelper(this.adb);
     this.devicePathBuilder = new AndroidDevicePathBuilder();
 
     this.instrumentation = new MonitoredInstrumentation(this.adb, logger);
+    this.deviceRegistry = new DeviceRegistry({
+      lockfilePath: environment.getDeviceLockFilePathAndroid(),
+    });
   }
 
   declareArtifactPlugins() {
@@ -56,6 +62,16 @@ class AndroidDriver extends DeviceDriverBase {
       video: (api) => new ADBScreenrecorderPlugin({ api, adb, devicePathBuilder }),
       timeline: (api) => new TimelineArtifactPlugin({api, adb, devicePathBuilder}),
     };
+  }
+
+  /** @protected */
+  async allocateDevice(matcher) {
+    log.debug({ event: 'ALLOCATE_DEVICE' }, `Trying to allocate a device based on %j`, matcher);
+    const adbName = await this.deviceRegistry.allocateDevice(() => {
+      return this.freeDeviceFinder.findFreeDevice(matcher);
+    });
+    log.debug({ event: 'ALLOCATE_DEVICE' }, `Settled on %j`, adbName);
+    return adbName;
   }
 
   async getBundleIdFromBinary(apkPath) {
