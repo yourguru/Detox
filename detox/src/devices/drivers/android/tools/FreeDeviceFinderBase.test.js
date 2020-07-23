@@ -1,53 +1,55 @@
-describe('devices lookup helper', () => {
-  const mockAdb = {};
+jest.mock('../../../../utils/logger');
 
-  class MockAdbDevicesHelper {
-    constructor(...args) {
-      adbDevicesHelper.ctor(...args);
-    }
+const FreeDeviceFinderBase = require('./FreeDeviceFinderBase');
 
-    lookupDevice(...args) {
-      return adbDevicesHelper.lookupDevice(...args);
-    }
-  }
-
-  let adbDevicesHelper;
-  beforeEach(() => {
-    const AdbDevicesHelper = jest.genMockFromModule('./tools/AdbDevicesHelper');
-    adbDevicesHelper = new AdbDevicesHelper();
-    adbDevicesHelper.ctor = jest.fn();
-    jest.mock('./tools/AdbDevicesHelper', () => MockAdbDevicesHelper);
-  });
-
-  let mockDeviceRegistry;
+describe('FreeDeviceFinderBase.findFreeDevice()', () => {
+  /** @type FreeDeviceFinderBase */
   let uut;
+  let adb, deviceRegistry, logger;
+
   beforeEach(() => {
-    mockDeviceRegistry = {
-      isDeviceBusy: jest.fn().mockReturnValue(false),
-    };
+    logger = require('../../../../utils/logger');
+    const ADB = jest.genMockFromModule('../exec/ADB');
+    const DeviceRegistry = jest.genMockFromModule('../../../DeviceRegistry');
 
-    const FreeDeviceFinderBase = require('./FreeDeviceFinderBase');
-    uut = new FreeDeviceFinderBase(mockAdb, mockDeviceRegistry);
+    adb = new ADB();
+    deviceRegistry = new DeviceRegistry();
+    uut = new FreeDeviceFinderBase(adb, deviceRegistry);
   });
 
-  it('should create an adb devices helper', async () => {
-    expect(adbDevicesHelper.ctor).toHaveBeenCalledWith(mockAdb);
+  it('should have virtual .isDeviceMatching() method', async () => {
+    expect(await uut.isDeviceMatching()).toBe(false);
   });
 
-  it('should pass a custom matcher func onto adb-devices helper for finding a free device', async () => {
-    await uut.findFreeDevice();
-    expect(adbDevicesHelper.lookupDevice).toHaveBeenCalledWith(expect.any(Function));
-  });
+  describe('when there are a few devices', () => {
+    let devices;
 
-  it('should return the matched device', async () => {
-    const adbName = 'mock-adb-name';
-    adbDevicesHelper.lookupDevice.mockReturnValue(adbName);
+    beforeEach(() => {
+      const busyDevice = { adbName: '1-busy', avdName: 'matching' };
+      const nonMatching = { adbName: '2-free', avdName: 'nonMatching' };
+      const matching = { adbName: '3-free', avdName: 'matching' };
 
-    const deviceName = await uut.findFreeDevice();
-    expect(deviceName).toEqual(adbName);
-  });
+      devices = [busyDevice, nonMatching, matching];
 
-  it('should throw when the matcher function is called', async () => {
-    expect(uut._matcherFn()).rejects.toEqual({ error: 'Not implemented!' });
+      adb.devices.mockImplementation(async () => ({ devices }));
+      deviceRegistry.isDeviceBusy.mockImplementation((adbName) => adbName.includes('busy'));
+
+      const fakeIsDeviceMatching = async (candidate, matcher) => candidate.avdName === matcher;
+      jest.spyOn(uut, 'isDeviceMatching').mockImplementation(fakeIsDeviceMatching);
+    });
+
+    it('should return first matching non-busy device', async () => {
+      const adbName = await uut.findFreeDevice('matching');
+      expect(adbName).toBe('3-free');
+    });
+
+    it('should return null if no free and matching device is found', async () => {
+      devices.splice(2, 1);
+
+      const adbName = await uut.findFreeDevice('matching');
+      expect(adbName).toBe(null);
+    });
+
+    // TODO: add logger output test
   });
 });

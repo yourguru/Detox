@@ -1,6 +1,7 @@
 const _ = require('lodash');
 const ExclusiveLockfile = require('../utils/ExclusiveLockfile');
 const safeAsync = require('../utils/safeAsync');
+const log = require('../utils/logger').child({ __filename });
 
 class DeviceRegistry {
   constructor({ lockfilePath }) {
@@ -18,9 +19,11 @@ class DeviceRegistry {
    * @returns {Promise<string>}
    */
   async allocateDevice(getDeviceId) {
+    log.debug({ event: 'ALLOCATE_DEVICE' }, `Trying to allocate a device...`);
     return this._lockfile.exclusively(async () => {
       const deviceId = await safeAsync(getDeviceId);
       this._toggleDeviceStatus(deviceId, true);
+      log.debug({ event: 'ALLOCATE_DEVICE' }, `Settled on %j`, deviceId);
       return deviceId;
     });
   }

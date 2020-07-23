@@ -26,12 +26,11 @@ class EmulatorDriver extends AndroidDriver {
   constructor(config) {
     super(config);
 
-    this.freeDeviceFinder = new FreeEmulatorFinder(this.adb, this.deviceRegistry);
-
     const emulatorExec = new EmulatorExec();
     this._emuVersionResolver = new EmulatorVersionResolver(emulatorExec);
     this._emuLauncher = new EmulatorLauncher(emulatorExec);
     this._avdValidator = new AVDValidator(emulatorExec);
+    this._freeDeviceFinder = new FreeEmulatorFinder(this.adb, this.deviceRegistry);
 
     this.pendingBoots = {};
     this._name = 'Unspecified Emulator';
@@ -47,7 +46,9 @@ class EmulatorDriver extends AndroidDriver {
     await this._avdValidator.validate(avdName);
     await this._fixEmulatorConfigIniSkinNameIfNeeded(avdName);
 
-    const adbName = await this.allocateDevice(avdName);
+    const adbName = await this.deviceRegistry.allocateDevice(() => {
+      return this._freeDeviceFinder.findFreeDevice(avdName);
+    });
 
     await this._boot(avdName, adbName);
 
