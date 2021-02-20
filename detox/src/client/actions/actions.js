@@ -161,7 +161,19 @@ class CurrentStatus extends Action {
 
   async handle(response) {
     this.expectResponseOfType(response, 'currentStatusResult');
-    log.info({ class: 'CurrentStatus' }, response.params.status);
+
+    const { status, state, resources } = response.params;
+    if (status) {
+      // New format (iOS)
+      log.info({ class: 'CurrentStatus' }, status);
+    } else {
+      // TODO: Legacy. Implement the new format in Android native code
+      log.info({ class: 'CurrentStatus' }, `Current status: ${state}`);
+      for (const resource of resources) {
+        log.info({ class: 'CurrentStatus' }, `Sync ${resource.name}: ${resource.info.prettyPrint}`);
+      }
+    }
+
     return response;
   }
 }
