@@ -233,7 +233,9 @@ describe('Client', () => {
       if (implementation === 'new') {
         expect(log.info).toHaveBeenCalledWith(expect.any(Object), 'Some status formatted on the native side');
       } else {
-        expect(log.info).toHaveBeenCalledWith(expect.any(Object), 'Current status: busy');
+        expect(log.info).toHaveBeenCalledWith(expect.any(Object), 'Current app status: busy');
+        expect(log.info).toHaveBeenCalledWith(expect.any(Object), expect.stringContaining('App State'));
+        expect(log.info).toHaveBeenCalledWith(expect.any(Object), expect.stringContaining('Dispatch Queue'));
       }
     });
 
@@ -268,10 +270,10 @@ describe('Client', () => {
           const payload = useLegacyFormat
             ? ({
                 "state": "busy",
-                "resources": [
-                  {"name":"App State","info":{"prettyPrint":"Waiting for network requests to finish.","elements":["__NSCFLocalDataTask:0x7fc95d72b6c0"],"appState":"Waiting for network requests to finish."}},
-                  {"name":"Dispatch Queue","info":{"queue":"OS_dispatch_queue_main: com.apple.main-thread[0x10805ea80] = { xrefcnt = 0x80000000, refcnt = 0x80000000, target = com.apple.root.default-qos.overcommit[0x10805f1c0], width = 0x1, state = 0x000fffe000000403, in-flight = 0, thread = 0x403 }","prettyPrint":"com.apple.main-thread"}}
-                ]
+                "resources": {
+                  "0": {"name":"App State","info":{"prettyPrint":"Waiting for network requests to finish.","elements":["__NSCFLocalDataTask:0x7fc95d72b6c0"],"appState":"Waiting for network requests to finish."}},
+                  "1": {"name":"Dispatch Queue","info":{"queue":"OS_dispatch_queue_main: com.apple.main-thread[0x10805ea80] = { xrefcnt = 0x80000000, refcnt = 0x80000000, target = com.apple.root.default-qos.overcommit[0x10805f1c0], width = 0x1, state = 0x000fffe000000403, in-flight = 0, thread = 0x403 }","prettyPrint":"com.apple.main-thread"}}
+                }
               })
             : ({
                 "status": "Some status formatted on the native side"
