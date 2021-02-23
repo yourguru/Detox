@@ -18,16 +18,19 @@ class DetoxSession {
     return this._app;
   }
 
+  set app(value) {
+    if (value) {
+      // this._assertAppIsNotConnected();
+      this._app = value;
+      // this._notifyAboutAppConnect();
+    } else {
+      this._app = null;
+      this._notifyAboutAppDisconnect();
+    }
+  }
+
   get tester() {
     return this._tester;
-  }
-
-  get isEmpty() {
-    return !this._tester && !this._app;
-  }
-
-  get isInterrupted() {
-    return !this._tester || !this._app;
   }
 
   set tester(value) {
@@ -41,15 +44,8 @@ class DetoxSession {
     }
   }
 
-  set app(value) {
-    if (value) {
-      // this._assertAppIsNotConnected();
-      this._app = value;
-      // this._notifyAboutAppConnect();
-    } else {
-      this._app = null;
-      this._notifyAboutAppDisconnect();
-    }
+  get isEmpty() {
+    return !this._tester && !this._app;
   }
 
   getRole(connection) {
