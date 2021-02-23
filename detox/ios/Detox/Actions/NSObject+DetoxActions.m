@@ -334,10 +334,10 @@ static UIView* _isViewOrDescendantFirstResponder(UIView* view)
 
 static UIView* _ensureFirstResponderIfNeeded(UIView* view)
 {
-	if(view.window.isKeyWindow == NO)
-	{
-		[view.window makeKeyWindow];
-	}
+	// if(view.window.isKeyWindow == NO)
+	// {
+	// 	[view.window makeKeyWindow];
+	// }
 	
 	UIView* firstResponder = _isViewOrDescendantFirstResponder(view);
 	if(firstResponder != nil)
