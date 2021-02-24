@@ -1,5 +1,5 @@
 {
-  "name": "detox-cli",
+  "name": "@yourguru/detox-cli",
   "version": "18.0.0",
   "description": "detox CLI tool wrapper",
   "main": "index.js",
