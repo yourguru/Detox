@@ -9,6 +9,9 @@
     "type": "git",
     "url": "https://github.com/wix/Detox.git"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "nativePackage": true,
   "bugs": {
     "url": "https://github.com/wix/Detox/issues"
